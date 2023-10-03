@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUHU - 用户登陆/注册</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('{{ url_for("static", filename="assets/14641696044985_.pic.jpg") }}'); /* 这里填写您的雪山背景图片的路径 */
+            background-size: cover;
+            background-position: center;
+            color: navy; /* 海军蓝色 */
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        header, main {
+            padding: 20px;
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: rgba(255, 255, 255, 0.7); /* 透明白色，使文字更容易阅读 */
+        }
+        /* 页头样式 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header .company-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        /* 主内容样式 */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid navy;
+        }
+        button {
+            background-color: white;
+            color: navy;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: block;
+            margin: 10px auto;
+        }
+        button:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* 页尾样式 */
+        footer {
+            text-align: center;
+            margin-top: auto; /* 推送到底部 */
+            font-family: Arial, sans-serif; /* 和HUHU logo一样的字体 */
+        }
+
+        footer p {
+            margin: 15px 0;  /* 调整了间距 */
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="company-name">HUHU</a>
+    </header>
+    <main>
+        <div class="input-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名" required>
+        </div>
+        <div class="input-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" placeholder="请输入密码" required>
+        </div>
+        <button type="button" onclick="login()">登陆/注册</button>
+    </main>
+    <script>
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function showMessage(message) {
+            document.getElementById('modal-text').innerText = message;
+            document.getElementById('modal').style.display = 'flex';
+        }
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!username || !password) {
+                alert('用户名或密码不能为空！');
+                return;
+            }
+
+            // 使用fetch API发送POST请求
+            fetch('{{ url_for("auth.login") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.reason === 'registration') {
+                        showMessage(`已为您创建了用户名：${username} 和密码，请重新登录！`);
+                    } else {
+                        location.href = '{{ url_for("video.management") }}';
+                    }
+                } else {
+                    if (data.reason === 'password') {
+                        showMessage('密码不正确，请重新输入！');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('服务器错误，请稍后再试！');
+            });
+        }
+    </script>
+    <footer>
+        <p>contact@huhuvideo.com</p>
+        <p>©2023 by Huhu</p>
+    </footer>
+</body>
+<div id="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center;">
+    <div style="background-color: white; padding: 20px; border-radius: 10px; max-width: 300px;">
+        <p id="modal-text"></p>
+        <button onclick="closeModal()">关闭</button>
+    </div>
+</div>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUHU - 上传成功</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('{{ url_for("static", filename="assets/14641696044985_.pic.jpg") }}'); /* 这里填写您的雪山背景图片的路径 */
+            background-size: cover;
+            background-position: center;
+            color: navy; /* 海军蓝色 */
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        header, main {
+            padding: 20px;
+            max-width: 1200px;  /* 调整最大宽度为 1200px */
+            margin: 20px auto; /* 使main部分在页面中居中 */
+            background-color: rgba(255, 255, 255, 0.7); /* 透明白色，使文字更容易阅读 */
+        }
+        /* 页头样式 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header .company-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        /* 主内容样式 */
+        h2 {
+            text-align: center;
+            margin-top: 50px;
+        }
+        p {
+            text-align: center;
+            margin-top: 20px;
+        }
+        button {
+            background-color: white;
+            color: navy;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background-color: #f5f5f5;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        /* 页尾样式 */
+        footer {
+            text-align: center;
+            margin-top: auto; /* 推送到底部 */
+            font-family: Arial, sans-serif; /* 和HUHU logo一样的字体 */
+        }
+
+        footer p {
+            margin: 15px 0;  /* 调整了间距 */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="company-name">HUHU</a>
+        <a href="{{ url_for('video.MyVideos') }}">我的视频</a>
+    </header>
+    <main>
+        <h2>视频上传成功</h2>
+        <p>下一步，在视频中框选自己</p>
+        <!-- 画布元素 -->
+        <canvas id="imageCanvas" width="800" height="600"></canvas>
+        <p id="selectionInfo"></p> <!-- 显示框选的大小和位置信息 -->
+        <button id="confirmButton" onclick="confirmSelection()" disabled style="color: gray;">确认框选</button>
+
+
+    </main>
+    <script>
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        document.getElementById('confirmButton').disabled = true; // 初始禁用确认按钮
+        let isDrawing = false;
+        let startX = 0;
+        let startY = 0;
+        let endX = 0;
+        let endY = 0;
+        let scaleX = 1;
+        let scaleY = 1;
+        let rect = { startX: 0, startY: 0, w: 0, h: 0 }; // 用于保存矩形的坐标和大小
+        let dragging = false;
+
+        // 加载图片
+        const imageUrl = new URLSearchParams(window.location.search).get('image_url');
+        console.log('Image URL:', imageUrl);  // 打印imageUrl来进行检查
+        const image = new Image();
+        image.src = imageUrl;  // 确保为图像对象设置了正确的URL
+        image.onload = function() {
+            // 计算缩放比例
+            scaleX = image.width / canvas.width;
+            scaleY = image.height / canvas.height;
+
+            // 选择较大的缩放比例来保持图像的纵横比
+            let scale = Math.max(scaleX, scaleY);
+
+            // 调整图像的宽度和高度
+            let scaledWidth = image.width / scale;
+            let scaledHeight = image.height / scale;
+
+            // 调整画布的大小以适应图像
+            canvas.width = scaledWidth;
+            canvas.height = scaledHeight;
+
+            // 将图像绘制到画布中
+            ctx.drawImage(image, 0, 0, scaledWidth, scaledHeight);
+        }
+
+        canvas.addEventListener('mousedown', function (e) {
+            rect.startX = e.offsetX;
+            rect.startY = e.offsetY;
+            dragging = true;
+        });
+
+        canvas.addEventListener('mousemove', function (e) {
+            if (dragging) {
+                rect.w = e.offsetX - rect.startX;
+                rect.h = e.offsetY - rect.startY;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);  // 清除画布
+
+                // 重新绘制图像
+                let scale = Math.max(scaleX, scaleY);
+                let scaledWidth = image.width / scale;
+                let scaledHeight = image.height / scale;
+                ctx.drawImage(image, 0, 0, scaledWidth, scaledHeight);
+
+                ctx.strokeStyle = 'red';
+                ctx.strokeRect(rect.startX, rect.startY, rect.w, rect.h);
+            }
+        });
+
+        canvas.addEventListener('mouseup', function () {
+            dragging = false;
+            // 检查框选的大小
+            if (rect.w > 0 && rect.h > 0) {
+                document.getElementById('confirmButton').disabled = false;  // 启用按钮
+                document.getElementById('confirmButton').style.color = 'navy'; // 设置字体颜色为navy
+            } else {
+                document.getElementById('confirmButton').disabled = true;   // 禁用按钮
+            }
+        });
+
+
+        function confirmSelection() {
+            const video_id = new URLSearchParams(window.location.search).get('video_id');  // 获取video_id参数
+            const scaledXIni = rect.startX * scaleX;
+            const scaledYIni = rect.startY * scaleY;
+            const scaledXEnd = (rect.startX + rect.w) * scaleX;
+            const scaledYEnd = (rect.startY + rect.h) * scaleY;
+            // 准备要发送的数据
+            const data = {
+                video_id: video_id,
+                xini: scaledXIni,
+                yini: scaledYIni,
+                xend: scaledXEnd,
+                yend: scaledYEnd
+            };
+
+            const xhr = new XMLHttpRequest();
+            var saveSelectionURL = "{{ url_for('video.save_selection') }}";
+            xhr.open('POST', saveSelectionURL, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(data));
+
+            xhr.onload = function() {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    alert("框选成功，请等待视频处理");  // 成功提示
+                    window.location.href = "{{ url_for('video.MyVideos') }}";  // 跳转到“我的视频”页面
+                } else {
+                    alert("Error: " + response.message);
+                }
+            };
+        }
+
+        function clearSelection() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  // 清除画布
+            ctx.drawImage(image, 0, 0);  // 重新绘制图片
+            document.getElementById('selectionInfo').innerText = '';
+        }
+        function generateVideo() {
+            // 视频生成逻辑
+            // 当视频处理完成后，显示在线观看和下载视频按钮
+            // document.querySelector('button[onclick="watchOnline()"]').style.display = 'block';
+            // document.querySelector('button[onclick="downloadVideo()"]').style.display = 'block';
+        }
+
+        function watchOnline() {
+            // 在线观看逻辑
+        }
+
+        function downloadVideo() {
+            // 下载视频逻辑
+        }
+    </script>
+    <footer>
+        <p>contact@huhuvideo.com</p>
+        <p>©2023 by Huhu</p>
+    </footer>
+</body>
+</html>
